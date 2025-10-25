@@ -1,0 +1,82 @@
+:root {
+  --primary-yellow: #FCC53A;
+  --dark-blue: #0F2A47;
+  --white: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  background-color: var(--dark-blue);
+  font-family: 'Segoe UI', sans-serif;
+  overflow: auto;
+}
+
+.sidebar {
+  width: 250px;             /* ✅ fixed width */
+  min-width: 250px;
+  max-width: 250px;
+  flex-shrink: 0;           /* ✅ prevent shrinking */
+  background-color: var(--dark-blue);
+  color: var(--white);
+  padding: 1rem;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh; /* allow content to grow */
+  background-color: var(--dark-blue);
+}
+
+.chat-section {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--white);
+  overflow: hidden;
+}
+
+.chat-header {
+  background-color: var(--dark-blue);
+  color: var(--primary-yellow);
+}
+
+.message {
+  margin: 8px 16px;
+  padding: 10px 15px;
+  border-radius: 10px;
+  max-width: 75%;
+}
+
+.user-msg {
+  align-self: flex-end;
+  background-color: var(--primary-yellow);
+  color: var(--dark-blue);
+}
+
+.bot-msg {
+  align-self: flex-start;
+  background-color: #f1f1f1;
+  color: var(--dark-blue);
+  /* color: #000; */
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border: none;
+}
+
+button.btn-outline-primary {
+  background-color: var(--dark-blue);
+  color: #f1f1f1;
+  border-radius: 12px;
+  transition: 0.2s;
+  width: auto !important;
+}
+
+button.btn-outline-primary:hover {
+  background-color: #f8f9fa;
+  color: var(--dark-blue);
+  transform: scale(1.02);
+  width: auto !important;
+}
