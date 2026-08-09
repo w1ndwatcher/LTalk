@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git
+.gitignore
+.cache/
+eval/results/
+node_modules/
+*.md
+.pytest_cache/
+.vscode/
+.idea/
