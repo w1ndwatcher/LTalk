@@ -2,7 +2,7 @@
 
 A production-deployed Retrieval-Augmented Generation chatbot for **LearnTrail**, built to answer questions about its courses, programs, and career services - grounded strictly in a curated knowledge base, with explicit guardrails against off-topic use and hallucination.
 
-🔗 **[Live Demo](https://polite-tree-016851b10.azurestaticapps.net)**
+🔗 **[Live Demo](https://polite-tree-016851b10.7.azurestaticapps.net)**
 
 ![LTalk in action](screenshots/chat-overview.png)
 
