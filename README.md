@@ -1,6 +1,8 @@
 # LTalk: LearnTrail RAG Chatbot
 
-A production-deployed Retrieval-Augmented Generation chatbot for **LearnTrail**, built to answer questions about its courses, programs, and career services — grounded strictly in a curated knowledge base, with explicit guardrails against off-topic use and hallucination.
+A production-deployed Retrieval-Augmented Generation chatbot for **LearnTrail**, built to answer questions about its courses, programs, and career services - grounded strictly in a curated knowledge base, with explicit guardrails against off-topic use and hallucination.
+
+🔗 **[Live Demo](https://polite-tree-016851b10.azurestaticapps.net)**
 
 ![LTalk in action](screenshots/chat-overview.png)
 
@@ -12,9 +14,9 @@ Live example of the app declining to guess rather than fabricate an answer:
 
 ## Why this project
 
-Most RAG demos stop at "retrieve some chunks, ask an LLM." This one is built the way a small production service actually needs to work: it has to run on multiple concurrent workers without losing state, degrade safely when a component fails, resist prompt injection and off-topic misuse, avoid inventing facts it doesn't have, and be observable enough to actually debug in production — not just in a notebook.
+Most RAG demos stop at "retrieve some chunks, ask an LLM." This one is built the way a small production service actually needs to work: it has to run on multiple concurrent workers without losing state, degrade safely when a component fails, resist prompt injection and off-topic misuse, avoid inventing facts it doesn't have, and be observable enough to actually debug in production.
 
-Several real bugs were found and fixed during development (not simulated for this README) — see [Engineering Highlights](#engineering-highlights) for the specifics, since *how* they were found and fixed is a better signal of engineering ability than a clean success story would be.
+Several real bugs were found and fixed during development (not simulated for this README) - see [Engineering Highlights](#engineering-highlights) for the specifics, since *how* they were found and fixed is a better signal of engineering ability than a clean success story would be.
 
 ---
 
@@ -30,7 +32,7 @@ flowchart TD
     GR -->|greeting only| LLM
     GR -->|needs retrieval| RET[Azure AI Search<br/>hybrid retrieval]
 
-    RET -->|relevant| LLM[Groq — openai/gpt-oss-120b<br/>LCEL: prompt | llm | parser]
+    RET -->|relevant| LLM[Groq — openai/gpt-oss-120b<br/>LCEL: prompt → llm → parser]
     RET -->|nothing relevant| FALLBACK[Redirect to learntrail.co.in]
 
     LLM -->|streamed tokens| U
@@ -44,33 +46,33 @@ flowchart TD
     style LLM fill:#0A2540,color:#fff
 ```
 
-Guardrail classification and the retrieval-gate lookup run **concurrently** (not sequentially) — neither depends on the other's result, so overlapping them removes one full round-trip of latency from every request.
+Guardrail classification and the retrieval-gate lookup run **concurrently** (not sequentially). Neither depends on the other's result, so overlapping them removes one full round-trip of latency from every request.
 
 ---
 
 ## Key Features
 
 ### Retrieval & Generation
-- **LCEL pipeline** (`prompt | llm | StrOutputParser`) — no legacy `RetrievalQA` chain; composable, streamable, and easy to reason about.
-- **Single retrieval per request** — an earlier version retrieved twice (once for a relevance gate, once inside the generation chain); consolidated into one call that serves both.
+- **LCEL pipeline** (`prompt | llm | StrOutputParser`) - no legacy `RetrievalQA` chain; composable, streamable, and easy to reason about.
+- **Single retrieval per request** - an earlier version retrieved twice (once for a relevance gate, once inside the generation chain); consolidated into one call that serves both.
 - **Token-by-token streaming** over a persistent background event loop, avoiding the "Event loop is closed" failure that throwaway per-request loops cause with async clients that cache sessions (Azure Search's async transport, notably).
 - **Chat history** via `RunnableWithMessageHistory`, Redis-backed with a 7-day TTL — survives across multiple gunicorn workers and Container Apps replicas, unlike an in-process dict.
 
 ### Guardrails (not a keyword list)
 - A single fast LLM call (`llama-3.1-8b-instant`) classifies every incoming message for **safety** (prompt injection, abuse), **scope** (is this actually about LearnTrail?), and **retrieval need** (plain greeting vs. real question) — before any retrieval or generation happens.
 - Replaced an earlier keyword-substring approach that had a real bug: `"hi" in query.lower()` matches *"**Wh**i**ch** mango is better?"* because `"hi"` is a substring of `"which"`. Any hardcoded short-keyword list has this failure mode.
-- **Strict grounding rule** in the system prompt: the model is explicitly forbidden from stating specific facts (prices, dates, steps) not present in retrieved context, and redirects to `https://learntrail.co.in/` when its knowledge base doesn't cover something — see the second screenshot above for this working correctly on a real query that previously caused fabrication.
+- **Strict grounding rule** in the system prompt: the model is explicitly forbidden from stating specific facts (prices, dates, steps) not present in retrieved context, and redirects to `https://learntrail.co.in/` when its knowledge base doesn't cover something - see the second screenshot above for this working correctly on a real query that previously caused fabrication.
 
 ### Caching
 - **Semantic** LLM response cache (Redis-backed, embedding-similarity match — not exact string match), so paraphrased repeat questions still hit cache. Hand-rolled rather than adopting `redisvl`'s vector search, since brute-force cosine similarity in Python is simpler and sufficient at this app's scale.
 - Hit/miss/exact/semantic counters exposed via `/health`.
 
 ### Resilience & Production Practices
-- **Fail-fast config validation** at startup (`config.py`) — a missing environment variable raises immediately with a clear message, instead of surfacing three requests later as a cryptic SDK error.
+- **Fail-fast config validation** at startup (`config.py`) - a missing environment variable raises immediately with a clear message, instead of surfacing three requests later as a cryptic SDK error.
 - **Structured JSON logging**, queryable in Application Insights / Log Analytics rather than grepped from stdout.
-- **Redis-backed rate limiting** on `/ask` and `/feedback` — correctly shared across every worker/replica, not reset per-process.
+- **Redis-backed rate limiting** on `/ask` and `/feedback` - correctly shared across every worker/replica, not reset per-process.
 - **Graceful degradation**: a guardrail classification failure defaults to a safe redirect rather than a raw 500 error reaching the user.
-- **CORS scoped to the actual frontend origin** — not left open to any origin.
+- **CORS scoped to the actual frontend origin** - not left open to any origin.
 
 ### User-Facing
 - Real-time streaming responses with markdown rendering (`react-markdown`), auto-scroll, and a locked viewport layout so the input bar stays pinned regardless of message length.
@@ -116,7 +118,7 @@ Metrics: RAGAS `faithfulness`, `answer_relevancy`, `context_precision`, `context
 
 ## Engineering Highlights
 
-A few real issues found and fixed during development, as demonstration of debugging ability:
+A few real issues found and fixed during development, kept here because they're a better demonstration of debugging ability than a clean narrative would be:
 
 - **Retrieval-wrapper async bug**: `AzureSearch.as_retriever()`'s async path in `langchain-community` passes `k` both explicitly and again via `**search_kwargs`, raising `TypeError: got multiple values for keyword argument 'k'` under `.astream()`. Fixed by calling the vectorstore's search method directly, bypassing the buggy wrapper.
 - **Event loop lifecycle bug**: creating a new `asyncio` event loop per Flask request broke on the *second* request, because Azure Search's async client caches an `aiohttp` session tied to the first (now-closed) loop. Fixed with a single persistent background event loop for the app's lifetime, with per-request work submitted via `run_coroutine_threadsafe`.
@@ -141,7 +143,7 @@ npm install
 npm start
 ```
 
-Requires a `.env` (backend) with Azure AI Search, Redis, Groq, Azure OpenAI, and LangSmith credentials — see `config.py` for the full list of required/optional variables.
+Requires a `.env` (backend) with Azure AI Search, Redis, Groq, Azure OpenAI, and LangSmith credentials. See `config.py` for the full list of required/optional variables.
 
 ## Deployment
 
