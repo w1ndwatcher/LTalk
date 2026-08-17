@@ -1,4 +1,4 @@
-# LTalk — LearnTrail RAG Chatbot
+# LTalk: LearnTrail RAG Chatbot
 
 A production-deployed Retrieval-Augmented Generation chatbot for **LearnTrail**, built to answer questions about its courses, programs, and career services — grounded strictly in a curated knowledge base, with explicit guardrails against off-topic use and hallucination.
 
